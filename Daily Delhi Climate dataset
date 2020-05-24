@@ -1,0 +1,78 @@
+data<-read.csv("D:/R/time series/DailyDelhiClimateTrain.csv", header=TRUE, stringsAsFactors=FALSE)
+head(data)
+any(is.na(data))
+class(data)
+
+class(data$date)
+data$date<-as.Date(data$date, format = "%Y-%m-%d")
+class(data$date)
+
+library(dplyr)
+data2<-select(data, c("date","humidity"))
+head(data2)
+class(data2)
+str(data2)
+
+library(ggplot2)
+tail(data2)
+dev.off()
+
+#data visualisation
+ggplot(data2, aes(x=date, y=humidity)) + 
+  geom_line() + 
+  scale_x_date(date_labels = "%Y-%m", date_breaks = "6 months") +
+  theme_classic()
+
+ggplot(data2, aes(x=date, y=humidity)) +
+  geom_line() + 
+  geom_smooth(method = "loess", se=FALSE, span=0.6) +   #loess gives a smooth line
+  theme_classic()
+
+
+library(forecast)
+tsd<-ts(data2$humidity, start = 2013, end = 2017, frequency = 12)
+plot(tsd)
+cycle(tsd)
+class(tsd)
+
+
+boxplot(tsd ~ cycle(tsd))
+
+ddata<-decompose(tsd, "multiplicative")
+plot(ddata)
+plot(tsd)
+abline((reg=lm(tsd ~ time(tsd))))
+
+plot(log(tsd))
+plot(diff(log(tsd)))
+
+mymodel<-auto.arima(tsd)
+mymodel
+
+acf(tsd)
+acf(diff(log(tsd))) #this will give q value
+pacf(diff(log(tsd)))  #p value
+
+fit<-arima(log(tsd), c(0,1,0), seasonal = list(order=c(0,1,0), period=12))
+pred<-predict(fit, n.ahead = 2*12)
+pred
+pred1<-2.718^pred$pred
+pred1
+
+ts.plot(tsd, pred1, log="y", lty=c(1,3))
+
+adata<-ts(tsd, frequency = 12, start = c(2013,1), end = c(2016,1))
+adata
+fit<-arima(log(adata), c(0,1,0), seasonal = list(order=c(0,1,0), period=12))
+pred<-predict(fit, n.ahead = 2*12)
+pred              
+pred1<-2.718^pred$pred
+pred1
+
+data1<-head(pred1,12)
+data1
+predict_2016<-round(data1, digits = 4)
+predict_2016
+original_2016<-tail(tsd,12)
+original_2016
+
